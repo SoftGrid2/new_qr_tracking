@@ -11,7 +11,7 @@ const FONT_FAMILY = 'Arial';
  * QR content: https://mydomain.com/verify?pid=<productId>
  */
 export const generateQrPngWithProductId = async (productId) => {
-  const url = `https://new-qr-tracking.onrender.com/verify?pid=${productId}`;
+  const url = `https://new-qr-tracking.onrender.com/api/scan/verify?pid=${productId}`;
 
   const qrCanvas = createCanvas(QR_SIZE, QR_SIZE);
   await QRCode.toCanvas(qrCanvas, url, {
