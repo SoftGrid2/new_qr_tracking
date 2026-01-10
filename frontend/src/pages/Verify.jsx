@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../styles/forms.css';
 import { apiClient } from '../api/api.js';
 
@@ -9,6 +9,7 @@ const useQuery = () => {
 
 const Verify = () => {
   const query = useQuery();
+  const navigate = useNavigate();
   const pid = query.get('pid') || '';
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState(null);
@@ -18,28 +19,51 @@ const Verify = () => {
   useEffect(() => {
     const verify = async () => {
       if (!pid) {
-        setError('Missing product ID in URL.');
+        setError('❌ Missing product ID in URL. Please scan a valid QR code.');
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
+        setError('');
         const res = await apiClient.get('/scan/verify', {
           params: { pid },
         });
+        
+        console.log('✅ Verify Response:', res.data);
         setResult(res.data);
-        // Show popup for successful scans
-        if (res.data.status === 'verified' || res.data.status === 'last_valid') {
+        setError('');
+        
+        // Show popup for all responses (successful and failed)
+        if (res.data.status === 'verified' || res.data.status === 'last_valid' || res.data.status === 'invalid') {
           setShowPopup(true);
-          // Auto-hide popup after 5 seconds
-          setTimeout(() => setShowPopup(false), 5000);
         }
       } catch (err) {
-        const message =
+        console.error('❌ Verify Error:', err);
+        
+        // Extract error message from backend response
+        const message = 
           err.response?.data?.message ||
+          err.message ||
           '❌ Invalid QR / Scan limit exceeded';
-        setResult({ status: 'invalid', message });
+        
+        const productId = err.response?.data?.productId || pid;
+        const scanCount = err.response?.data?.scanCount;
+        const maxScan = err.response?.data?.maxScan;
+        
+        // Set result with error details
+        setResult({ 
+          status: 'invalid', 
+          message,
+          productId,
+          scanCount,
+          maxScan,
+        });
+        setError(message);
+        
+        // Show popup for error cases too
+        setShowPopup(true);
       } finally {
         setLoading(false);
       }
@@ -73,8 +97,8 @@ const Verify = () => {
           'radial-gradient(circle at top, #22c55e, #020617 55%, #0b1120)',
       }}
     >
-      {/* Success Popup Modal */}
-      {showPopup && (result?.status === 'verified' || result?.status === 'last_valid') && (
+      {/* Success/Error Popup Modal */}
+      {showPopup && result && (
         <div
           style={{
             position: 'fixed',
@@ -101,7 +125,6 @@ const Verify = () => {
               textAlign: 'center',
               boxShadow: '0 24px 60px rgba(0, 0, 0, 0.3)',
               animation: 'slideUp 0.4s ease-out',
-              cursor: 'pointer',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -122,24 +145,30 @@ const Verify = () => {
                 marginBottom: '0.5rem',
               }}
             >
-              {result?.status === 'verified' ? 'Scan Successful!' : 'Last Valid Scan'}
+              {result?.status === 'verified' 
+                ? '✅ Scan Successful!' 
+                : result?.status === 'last_valid'
+                ? '⚠️ Last Valid Scan'
+                : '❌ Verification Failed'}
             </h2>
             <p
               style={{
                 fontSize: '1rem',
                 color: '#6b7280',
                 marginBottom: '1.5rem',
+                lineHeight: '1.5',
               }}
             >
               {result?.message}
             </p>
+            
             {displayProductId && (
               <div
                 style={{
                   backgroundColor: '#f3f4f6',
                   borderRadius: '0.75rem',
                   padding: '1rem',
-                  marginBottom: '1rem',
+                  marginBottom: '1.5rem',
                 }}
               >
                 <p
@@ -166,41 +195,123 @@ const Verify = () => {
                 </p>
               </div>
             )}
-            {result && (
-              <p
+            
+            {result && (result.scanCount !== undefined || result.maxScan !== undefined) && (
+              <div
                 style={{
-                  fontSize: '0.875rem',
-                  color: '#9ca3af',
+                  backgroundColor: result.status === 'verified' 
+                    ? 'rgba(22, 163, 74, 0.1)' 
+                    : result.status === 'last_valid'
+                    ? 'rgba(245, 158, 11, 0.1)'
+                    : 'rgba(220, 38, 38, 0.1)',
+                  borderRadius: '0.75rem',
+                  padding: '1rem',
                   marginBottom: '1.5rem',
+                  border: `2px solid ${
+                    result.status === 'verified' 
+                      ? '#16a34a' 
+                      : result.status === 'last_valid'
+                      ? '#f59e0b'
+                      : '#dc2626'
+                  }`,
                 }}
               >
-                Scans used: {result.scanCount ?? '-'} / {result.maxScan ?? 5}
-              </p>
+                <p
+                  style={{
+                    fontSize: '0.875rem',
+                    color: 
+                      result.status === 'verified' 
+                        ? '#16a34a' 
+                        : result.status === 'last_valid'
+                        ? '#d97706'
+                        : '#991b1b',
+                    fontWeight: '600',
+                    margin: '0',
+                  }}
+                >
+                  Scans Used: <strong>{result.scanCount ?? '-'} / {result.maxScan ?? 5}</strong>
+                </p>
+                <p
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 
+                      result.status === 'verified' 
+                        ? '#15803d' 
+                        : result.status === 'last_valid'
+                        ? '#b45309'
+                        : '#7f1d1d',
+                    marginTop: '0.5rem',
+                    margin: '0.5rem 0 0 0',
+                  }}
+                >
+                  {result.scanCount >= result.maxScan 
+                    ? '⚠️ All scans used - Product marked invalid' 
+                    : `${result.maxScan - result.scanCount} scans remaining`}
+                </p>
+              </div>
             )}
-            <button
-              onClick={() => setShowPopup(false)}
+            
+            <div
               style={{
-                backgroundColor: '#4f46e5',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '0.75rem',
-                padding: '0.75rem 2rem',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = '#4338ca';
-                e.target.style.transform = 'translateY(-2px)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = '#4f46e5';
-                e.target.style.transform = 'translateY(0)';
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'center',
               }}
             >
-              Close
-            </button>
+              <button
+                onClick={() => setShowPopup(false)}
+                style={{
+                  backgroundColor: result?.status === 'invalid' ? '#6b7280' : '#4f46e5',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '0.75rem',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  flex: 1,
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = result?.status === 'invalid' ? '#4b5563' : '#4338ca';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = result?.status === 'invalid' ? '#6b7280' : '#4f46e5';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
+                {result?.status === 'invalid' ? 'Try Again' : 'Continue'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowPopup(false);
+                  navigate(-1);
+                }}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '0.75rem',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  flex: 1,
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = '#4b5563';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = '#6b7280';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
+                ← Go Back
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -270,7 +381,7 @@ const Verify = () => {
           </div>
         )}
         {!loading && error && (
-          <div className="form-error" style={{ textAlign: 'center' }}>
+          <div className="form-error" style={{ textAlign: 'center', marginBottom: '1rem' }}>
             {error}
           </div>
         )}
@@ -282,21 +393,39 @@ const Verify = () => {
               fontSize: '1.1rem',
             }}
           >
-            <span className={getStatusClass()} style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}>
+            <span 
+              className={getStatusClass()} 
+              style={{ 
+                padding: '0.5rem 1rem', 
+                fontSize: '1rem',
+                display: 'inline-block',
+              }}
+            >
               {getStatusIcon()} {result.message}
             </span>
           </div>
         )}
-        {!loading && result && (
-          <p
+        {!loading && result && (result.scanCount !== undefined || result.maxScan !== undefined) && (
+          <div
             style={{
               textAlign: 'center',
-              fontSize: '0.875rem',
-              color: '#6b7280',
+              padding: '0.75rem 1rem',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderRadius: '0.5rem',
+              borderLeft: '4px solid #3b82f6',
             }}
           >
-            Scans used: {result.scanCount ?? '-'} / {result.maxScan ?? 5}
-          </p>
+            <p
+              style={{
+                textAlign: 'center',
+                fontSize: '0.875rem',
+                color: '#6b7280',
+                margin: '0',
+              }}
+            >
+              <strong>Scans used:</strong> {result.scanCount ?? '-'} / {result.maxScan ?? 5}
+            </p>
+          </div>
         )}
       </div>
     </div>
