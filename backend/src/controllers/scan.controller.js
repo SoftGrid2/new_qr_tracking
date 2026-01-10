@@ -41,6 +41,7 @@ export const verifyProductScan = async (req, res, next) => {
       return res.json({
         status: 'invalid',
         message: '❌ Invalid QR / Scan limit exceeded',
+        productId: product.productId,
         scanCount: product.scanCount,
         maxScan: product.maxScan,
       });
@@ -65,6 +66,7 @@ export const verifyProductScan = async (req, res, next) => {
     res.json({
       status: responseStatus,
       message,
+      productId: product.productId,
       scanCount: product.scanCount,
       maxScan: product.maxScan,
     });
