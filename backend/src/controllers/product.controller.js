@@ -112,3 +112,49 @@ export const downloadQr = async (req, res, next) => {
     next(err);
   }
 };
+
+export const updateProductStatus = async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const { status } = req.body;
+
+    if (!PRODUCT_ID_REGEX.test(productId)) {
+      return res.status(400).json({ message: 'Invalid product ID format' });
+    }
+
+    if (status !== 'active' && status !== 'invalid') {
+      return res.status(400).json({ message: 'Status must be either "active" or "invalid"' });
+    }
+
+    const product = await Product.findOne({ productId });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    product.status = status;
+    await product.save();
+
+    res.json({ message: `Product status updated to ${status}`, product });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteProduct = async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+
+    if (!PRODUCT_ID_REGEX.test(productId)) {
+      return res.status(400).json({ message: 'Invalid product ID format' });
+    }
+
+    const product = await Product.findOneAndDelete({ productId });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.json({ message: 'Product deleted successfully', product });
+  } catch (err) {
+    next(err);
+  }
+};

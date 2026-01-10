@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/api.js';
-import { ArrowLeft, Download, Package, Hash, Scan, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Download, Package, Hash, Scan, Calendar, CheckCircle, XCircle, Power, PowerOff, Trash2, AlertCircle } from 'lucide-react';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -12,6 +12,9 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchProduct();
@@ -21,6 +24,7 @@ const ProductDetails = () => {
     try {
       setLoading(true);
       setError('');
+      setSuccess('');
       const res = await apiClient.get(`/products/${productId}`);
       setProduct(res.data);
     } catch (err) {
@@ -30,6 +34,55 @@ const ProductDetails = () => {
       setLoading(false);
     }
   };
+
+  const handleToggleStatus = async () => {
+    if (!product) return;
+    
+    const newStatus = product.status === 'active' ? 'invalid' : 'active';
+    
+    try {
+      setUpdatingStatus(true);
+      setError('');
+      setSuccess('');
+      const res = await apiClient.patch(`/products/${productId}/status`, { status: newStatus });
+      setProduct(res.data.product);
+      setSuccess(`Product status updated to ${newStatus}`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update product status');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!product) return;
+    
+    if (!window.confirm(`Are you sure you want to delete "${product.productName}" (ID: ${product.productId})? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      setError('');
+      setSuccess('');
+      await apiClient.delete(`/products/${productId}`);
+      setSuccess(`Product "${product.productName}" deleted successfully`);
+      setTimeout(() => {
+        navigate('/products');
+      }, 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete product');
+      setDeleting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const qrDownloadUrl = `${API_BASE_URL}/api/products/${productId}/qr`;
 
@@ -68,10 +121,71 @@ const ProductDetails = () => {
         Back to Products
       </button>
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Product Details</h1>
-        <p className="text-gray-600 mt-2">Complete information about this product</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Product Details</h1>
+          <p className="text-gray-600 mt-2">Complete information about this product</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggleStatus}
+            disabled={updatingStatus}
+            className={`btn-secondary inline-flex items-center gap-2 ${
+              product.status === 'active'
+                ? 'bg-yellow-50 text-yellow-700 border-yellow-300 hover:bg-yellow-100'
+                : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {updatingStatus ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                Updating...
+              </>
+            ) : product.status === 'active' ? (
+              <>
+                <PowerOff className="w-4 h-4" />
+                Deactivate
+              </>
+            ) : (
+              <>
+                <Power className="w-4 h-4" />
+                Activate
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleDeleteProduct}
+            disabled={deleting}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {deleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                Delete Product
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-5 h-5" />
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <CheckCircle className="w-5 h-5" />
+          {success}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Product Information Card */}

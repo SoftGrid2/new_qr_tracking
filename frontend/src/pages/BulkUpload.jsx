@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/api.js';
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
 
 const BulkUpload = () => {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
@@ -209,9 +211,16 @@ const BulkUpload = () => {
 
             {summary.inserted > 0 && (
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm font-medium text-green-800">
+                <p className="text-sm font-medium text-green-800 mb-3">
                   ✓ Successfully uploaded {summary.inserted} product{summary.inserted !== 1 ? 's' : ''}!
                 </p>
+                <button
+                  onClick={() => navigate('/products')}
+                  className="btn-primary inline-flex items-center gap-2 text-sm"
+                >
+                  <Eye className="w-4 h-4" />
+                  View All Products
+                </button>
               </div>
             )}
           </div>

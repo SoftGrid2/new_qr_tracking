@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/api.js';
-import { Package, Plus } from 'lucide-react';
+import { Package, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 
 const PRODUCT_ID_REGEX = /^[0-9]{16}$/;
 
 const AddProduct = () => {
+  const navigate = useNavigate();
   const [productId, setProductId] = useState('');
   const [productName, setProductName] = useState('');
   const [error, setError] = useState('');
@@ -28,18 +30,31 @@ const AddProduct = () => {
 
     try {
       setLoading(true);
+      setError('');
+      setSuccess('');
       await apiClient.post('/products', {
         productId,
         productName: productName.trim(),
       });
-      setSuccess('Product created successfully.');
+      setSuccess(`Product "${productName.trim()}" created successfully!`);
       setProductId('');
       setProductName('');
+      // Optionally redirect to product list after 2 seconds
+      setTimeout(() => {
+        if (window.confirm('Product created successfully! Would you like to view all products?')) {
+          navigate('/products');
+        }
+      }, 2000);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          'Failed to create product. Please try again.'
-      );
+      const errorMessage = err.response?.data?.message || 'Failed to create product. Please try again.';
+      setError(errorMessage);
+      if (err.response?.status === 409) {
+        // Duplicate product ID
+        setError('A product with this ID already exists. Please use a different Product ID.');
+      } else if (err.response?.status === 400) {
+        // Validation error
+        setError(errorMessage || 'Invalid product data. Please check Product ID (must be 16 digits) and Product Name.');
+      }
     } finally {
       setLoading(false);
     }
@@ -48,7 +63,17 @@ const AddProduct = () => {
   const handleProductIdChange = (e) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 16);
     setProductId(value);
+    // Clear error when user starts typing
+    if (error) setError('');
   };
+
+  // Clear success message after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   return (
     <div>
@@ -94,19 +119,32 @@ const AddProduct = () => {
               maxLength={16}
             />
             <p className="mt-1 text-sm text-gray-500">
-              Enter exactly 16 digits (numbers only)
+              Enter exactly 16 digits (numbers only). Current length: {productId.length}/16
             </p>
+            {productId.length > 0 && productId.length < 16 && (
+              <p className="mt-1 text-sm text-amber-600">
+                ⚠️ Product ID must be exactly 16 digits
+              </p>
+            )}
+            {productId.length === 16 && PRODUCT_ID_REGEX.test(productId) && (
+              <p className="mt-1 text-sm text-green-600 flex items-center gap-1">
+                <CheckCircle className="w-4 h-4" />
+                Valid Product ID format
+              </p>
+            )}
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              {error}
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-              {success}
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{success}</span>
             </div>
           )}
 
