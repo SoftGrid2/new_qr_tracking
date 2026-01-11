@@ -130,13 +130,13 @@ const ProductList = () => {
               value={search}
               onChange={handleSearch}
               placeholder="Search by product name or ID..."
-              className="input-field pl-10"
+              className="input-field pl-10 text-black"
             />
           </div>
           <select
             value={statusFilter}
             onChange={handleStatusFilter}
-            className="input-field md:w-48"
+            className="input-field md:w-48 text-black"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>

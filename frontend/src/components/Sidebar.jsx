@@ -39,12 +39,12 @@ const Sidebar = () => {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
             <span className="text-primary-600 font-semibold">
-              {admin?.name?.charAt(0).toUpperCase() || 'A'}
+              {admin?.fullName?.charAt(0).toUpperCase() || 'A'}
             </span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {admin?.name || 'Admin'}
+              {admin?.fullName || 'Admin'}
             </p>
             <p className="text-xs text-gray-500 truncate">
               {admin?.email || 'admin@example.com'}

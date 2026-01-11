@@ -65,7 +65,7 @@ const AdminProfile = () => {
               </label>
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <User className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-900">{admin?.name || 'N/A'}</span>
+                <span className="text-gray-900">{admin?.fullName || 'N/A'}</span>
               </div>
             </div>
             <div>
@@ -96,7 +96,7 @@ const AdminProfile = () => {
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="input-field pl-10"
+                  className="input-field pl-10 text-black"
                   placeholder="Enter current password"
                   required
                 />
@@ -113,7 +113,7 @@ const AdminProfile = () => {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="input-field pl-10"
+                  className="input-field pl-10 text-black"
                   placeholder="Enter new password (min 6 characters)"
                   required
                   minLength={6}
@@ -131,7 +131,7 @@ const AdminProfile = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input-field pl-10"
+                  className="input-field pl-10 text-black"
                   placeholder="Confirm new password"
                   required
                   minLength={6}

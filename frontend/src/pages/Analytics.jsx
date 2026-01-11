@@ -89,7 +89,7 @@ const Analytics = () => {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="input-field"
+              className="input-field text-black"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -99,7 +99,7 @@ const Analytics = () => {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="input-field"
+              className="input-field text-black"
             />
           </div>
           <button onClick={handleFilter} className="btn-primary flex items-center gap-2">
