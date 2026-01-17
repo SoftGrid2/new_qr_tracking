@@ -215,7 +215,7 @@ const VerificationModal = ({ result, onClose }) => {
             marginTop: '2rem',
           }}
         >
-          <button
+          {/* <button
             onClick={onClose}
             style={{
               flex: 1,
@@ -241,11 +241,11 @@ const VerificationModal = ({ result, onClose }) => {
             }}
           >
             {isInvalid ? '🔄 Try Again' : '✓ Confirm'}
-          </button>
+          </button> */}
         </div>
 
         {/* Secondary Action */}
-        <button
+        {/* <button
           onClick={onClose}
           style={{
             marginTop: '0.75rem',
@@ -270,7 +270,7 @@ const VerificationModal = ({ result, onClose }) => {
           }}
         >
           ← Back
-        </button>
+        </button> */}
       </div>
 
       <style>{`

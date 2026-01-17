@@ -79,8 +79,9 @@ const Verify = () => {
       <VerificationModal 
         result={result} 
         onClose={() => {
-          setShowPopup(false);
-          navigate(-1);
+          // setShowPopup(false);
+          // // navigate(-1);
+          // window.close();
         }} 
       />
     );
@@ -90,7 +91,7 @@ const Verify = () => {
   if (loading) {
     return (
       <div
-        className="page-centered"
+        className="page-centered flex-col"
         style={{
           padding: '1.5rem',
           background: 'radial-gradient(circle at top, #22c55e, #020617 55%, #0b1120)',
@@ -123,7 +124,7 @@ const Verify = () => {
   if (error) {
     return (
       <div
-        className="page-centered"
+        className="page-centered flex-col"
         style={{
           padding: '1.5rem',
           background: 'radial-gradient(circle at top, #22c55e, #020617 55%, #0b1120)',
@@ -144,7 +145,7 @@ const Verify = () => {
   // Default render (should not reach here)
   return (
     <div
-      className="page-centered"
+      className="page-centered flex-col"
       style={{
         padding: '1.5rem',
         background: 'radial-gradient(circle at top, #22c55e, #020617 55%, #0b1120)',
