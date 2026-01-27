@@ -20,7 +20,7 @@ export const generateQrPngWithProductId = async (productId) => {
     margin: 2,
   });
 
-  const text = `Product ID: ${productId}`;
+  const text = `${productId}`;
   const textCanvas = createCanvas(QR_SIZE + PADDING * 2, QR_SIZE + 120);
   const ctx = textCanvas.getContext('2d');
 
