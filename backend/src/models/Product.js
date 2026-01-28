@@ -29,7 +29,7 @@ const productSchema = new mongoose.Schema(
     },
     maxScan: {
       type: Number,
-      default: 5,
+      default: 2,
       min: 1,
     },
     status: {

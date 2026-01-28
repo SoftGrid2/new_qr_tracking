@@ -13,7 +13,35 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
+// app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
+// Convert comma-separated origins from .env into an array
+const allowedOrigins = process.env.FRONTEND_URL
+	? process.env.FRONTEND_URL.split(",").map(origin => origin.trim())
+	: [];
+
+console.log("✅ Allowed CORS Origins:", allowedOrigins);
+
+const corsOptions = {
+	origin: (origin, callback) => {
+		// Allow requests with no origin (like Postman, curl)
+		if (!origin) return callback(null, true);
+
+		if (allowedOrigins.includes(origin)) {
+			return callback(null, true);
+		} else {
+			console.warn(`❌ CORS blocked request from: ${origin}`);
+			// Block the request
+			return callback(new Error("Not allowed by CORS"));
+		}
+	},
+	credentials: true, // allow cookies or auth headers
+};
+
+// Apply CORS globally
+app.use(cors(corsOptions));
+
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
