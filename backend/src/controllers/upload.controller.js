@@ -79,7 +79,7 @@ export const bulkUploadProducts = async (req, res, next) => {
           productId,
           productName: productName.trim(),
           scanCount: 0,
-          maxScan: 5,
+          maxScan: 2,
           status: 'active',
         });
         inserted += 1;
