@@ -3,7 +3,7 @@ import { createCanvas, loadImage } from 'canvas';
 
 const QR_SIZE = 500;
 const PADDING = 40;
-const FONT_SIZE = 28;
+const FONT_SIZE = 40;
 const FONT_FAMILY = 'Arial';
 
 /**
@@ -20,8 +20,14 @@ export const generateQrPngWithProductId = async (productId) => {
     margin: 2,
   });
 
-  const text = `${productId}`;
-  const textCanvas = createCanvas(QR_SIZE + PADDING * 2, QR_SIZE + 120);
+  // Split productId (16 chars) into 4 chunks of 4
+  const pIdStr = String(productId);
+  const part1 = pIdStr.substring(0, 4).split('').join(' ');
+  const part2 = pIdStr.substring(4, 8).split('').join(' ');
+  const part3 = pIdStr.substring(8, 12).split('').join(' ');
+  const part4 = pIdStr.substring(12, 16).split('').join(' ');
+
+  const textCanvas = createCanvas(QR_SIZE + PADDING * 2, QR_SIZE + 160);
   const ctx = textCanvas.getContext('2d');
 
   // White background
@@ -38,9 +44,9 @@ export const generateQrPngWithProductId = async (productId) => {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   const textX = textCanvas.width / 2;
-  const textY = PADDING + QR_SIZE + 20;
-  ctx.fillText(text, textX, textY);
+  const textY = PADDING + QR_SIZE - 10;
+  ctx.fillText(`${part1}   ${part2}`, textX, textY);
+  ctx.fillText(`${part3}   ${part4}`, textX, textY + FONT_SIZE + 10);
 
   return textCanvas.toBuffer('image/png');
 };
-
