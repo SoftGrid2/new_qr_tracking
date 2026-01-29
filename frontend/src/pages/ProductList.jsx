@@ -18,6 +18,7 @@ const ProductList = () => {
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 1 });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -88,7 +89,7 @@ const ProductList = () => {
 
   const handleToggleStatus = async (productId, currentStatus) => {
     const newStatus = currentStatus === 'active' ? 'invalid' : 'active';
-    
+
     try {
       setUpdatingStatus(productId);
       setError('');
@@ -103,6 +104,41 @@ const ProductList = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      setError('');
+      setSuccess('');
+
+      const response = await apiClient.get('/analytics/export-in-excel', {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `product_scan_data_${Date.now()}.xlsx`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename=([^;]+)/);
+        if (filenameMatch && filenameMatch.length > 1) {
+          filename = filenameMatch[1].replace(/"/g, '');
+        }
+      }
+
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to export data.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -112,13 +148,27 @@ const ProductList = () => {
             View all products, their scan status, and download QR codes.
           </p>
         </div>
-        <button
-          onClick={() => navigate('/add-product')}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add New Product
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/add-product')}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add New Product
+          </button>
+          <button
+            onClick={handleExport}
+            className="btn-secondary flex items-center gap-2"
+            disabled={exporting}
+          >
+            {exporting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {exporting ? 'Exporting...' : 'Export Data'}
+          </button>
+        </div>
       </div>
 
       <div className="card mb-6">
@@ -225,11 +275,10 @@ const ProductList = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            p.status === 'active'
+                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${p.status === 'active'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
-                          }`}
+                            }`}
                         >
                           {p.status}
                         </span>
@@ -254,11 +303,10 @@ const ProductList = () => {
                           <button
                             onClick={() => handleToggleStatus(p.productId, p.status)}
                             disabled={updatingStatus === p.productId}
-                            className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                              p.status === 'active'
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${p.status === 'active'
                                 ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                                 : 'bg-green-100 text-green-800 hover:bg-green-200'
-                            }`}
+                              }`}
                             title={p.status === 'active' ? 'Deactivate Product' : 'Activate Product'}
                           >
                             {updatingStatus === p.productId ? (

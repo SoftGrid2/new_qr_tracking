@@ -10,7 +10,7 @@ const VerificationModal = ({ result, onClose }) => {
     if (isSuccess) {
       return {
         icon: '✅',
-        title: 'Product Verified Successfully',
+        title: 'Product Verified Successfully By SoftGrid Info Pvt. Ltd.',
         message: 'Your product has been verified successfully.',
         bgColor: 'rgba(22, 163, 74, 0.08)',
         borderColor: '#16a34a',
@@ -31,9 +31,9 @@ const VerificationModal = ({ result, onClose }) => {
     }
     return {
       icon: '❌',
-      title: 'Invalid QR Code',
-      message: 'This QR code is no longer valid.',
-      bgColor: 'rgba(220, 38, 38, 0.08)',
+      title: 'Invalid anti-counterfeiting code',
+      message: 'This QR code is no longer valid. ',
+      // bgColor: 'rgba(220, 38, 38, 0.08)',
       borderColor: '#dc2626',
       textColor: '#991b1b',
       darkTextColor: '#7f1d1d',
@@ -162,7 +162,7 @@ const VerificationModal = ({ result, onClose }) => {
         )}
 
         {/* Scan Count Section */}
-        {(result?.scanCount !== undefined || result?.maxScan !== undefined) && (
+        {/* {(result?.scanCount !== undefined || result?.maxScan !== undefined) && (
           <div
             style={{
               backgroundColor: config.bgColor,
@@ -205,7 +205,7 @@ const VerificationModal = ({ result, onClose }) => {
                 : `${result.maxScan - result.scanCount} scans remaining`}
             </p>
           </div>
-        )}
+        )} */}
 
         {/* Action Buttons */}
         <div

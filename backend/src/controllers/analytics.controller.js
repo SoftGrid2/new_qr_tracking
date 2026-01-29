@@ -1,5 +1,6 @@
 import Product from '../models/Product.js';
 import ScanLog from '../models/ScanLog.js';
+import xlsx from 'xlsx';
 
 export const getDashboardStats = async (req, res, next) => {
   try {
@@ -14,6 +15,60 @@ export const getDashboardStats = async (req, res, next) => {
       invalidProducts,
       totalScans,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const exportProductData = async (req, res, next) => {
+  try {
+    const dataForExcel = await Product.aggregate([
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: 'scanlogs',
+          let: { pid: '$productId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$productId', '$$pid'] } } },
+            { $sort: { scannedAt: 1 } },
+          ],
+          as: 'scans',
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          productId: '$productId',
+          productName: '$productName',
+          scanCount: '$scanCount',
+          maxScan: '$maxScan',
+          status: '$status',
+          createdAt: '$createdAt',
+          scan1: { $ifNull: [{ $arrayElemAt: ['$scans.scannedAt', 0] }, ''] },
+          scan2: { $ifNull: [{ $arrayElemAt: ['$scans.scannedAt', 1] }, ''] },
+        },
+      },
+    ]);
+
+    if (dataForExcel.length === 0) {
+      return res.status(404).json({ message: 'No products to export.' });
+    }
+
+    const worksheet = xlsx.utils.json_to_sheet(dataForExcel);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Products');
+
+    const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=product_scan_data_${Date.now()}.xlsx`
+    );
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.send(buffer);
   } catch (err) {
     next(err);
   }
