@@ -40,11 +40,45 @@ const corsOptions = {
 // Apply CORS globally
 app.use(cors(corsOptions));
 
+// logs printing in console
+
+// color of status selector for morgan
+const colorByStatus = (status) => {
+	if (status >= 500) return `\x1b[31m${status}\x1b[0m`; // red
+	if (status >= 400) return `\x1b[33m${status}\x1b[0m`; // yellow
+	if (status >= 300) return `\x1b[36m${status}\x1b[0m`; // cyan
+	return `\x1b[32m${status}\x1b[0m`; // green
+};
+
+// color of method selector for morgan
+const colorByMethod = (method) => {
+	switch (method) {
+		case "GET":
+			return `\x1b[32m${method}\x1b[0m`; // green
+		case "POST":
+			return `\x1b[34m${method}\x1b[0m`; // blue
+		case "PUT":
+			return `\x1b[33m${method}\x1b[0m`; // yellow
+		case "DELETE":
+			return `\x1b[31m${method}\x1b[0m`; // red
+		default:
+			return `\x1b[37m${method}\x1b[0m`; // white
+	}
+};
+
+
+morgan.token("colored-status", (req, res) => colorByStatus(res.statusCode));
+morgan.token("colored-method", (req) => colorByMethod(req.method));
+
+
+// app.use(morgan("dev"));
+app.use(morgan('\x1b[90m[:date[iso]]\x1b[0m [:colored-status] :colored-method	\x1b[36m:url\x1b[0m \x1b[35m:response-time ms\x1b[0m'));
+
 
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
+// app.use(morgan('dev'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -57,11 +91,63 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/qr', qrRoutes);
 
+// app.use((err, req, res, next) => {
+//   console.error(err);
+//   res
+//     .status(err.status || 500)
+//     .json({ message: err.message || 'Internal server error' });
+// });
+
+
+// 404 handler logs your missing endpoints
+app.use((req, res) => {
+	const red = "\x1b[31m";
+	const yellow = "\x1b[33m";
+	const grey = "\x1b[90m";
+	const reset = "\x1b[0m";
+
+	console.log(
+		`${grey}[${new Date().toISOString()}]${reset} ` +
+		`[${red}${res.statusCode}${reset}] ` +
+		`${yellow}${req.method}` +
+		`	${red}${req.originalUrl} ` +
+		`${red}<-- * Endpoint Not Found${reset}`
+	);
+
+	res.status(404).json({
+		status: false,
+		message: "Endpoint Not Found",
+	});
+});
+
+
+// ----- 500 (error handler) -----
 app.use((err, req, res, next) => {
-  console.error(err);
-  res
-    .status(err.status || 500)
-    .json({ message: err.message || 'Internal server error' });
+	const status = err.status || err.statusCode || 500;
+
+	const red = "\x1b[31m";
+	const yellow = "\x1b[33m";
+	const grey = "\x1b[90m";
+	const reset = "\x1b[0m";
+
+	// single, efficient write
+	const line =
+		`${grey}[${new Date().toISOString()}]${reset} ` +
+		`[${colorByStatus(status)}] ` +
+		`${colorByMethod(req.method)} ${req.originalUrl} ` +
+		`${red}<-- * Server Error${reset}\n`;
+	process.stderr.write(line);
+
+	// minimal details in prod; full stack in dev
+	if (process.env.NODE_ENV !== "production") {
+		process.stderr.write((err.stack || String(err)) + "\n");
+	}
+
+	if (!res.headersSent) {
+		res.status(status).json({ success: false, message: "Internal Server Error" });
+	} else {
+		next(err); // if headers already sent, delegate
+	}
 });
 
 export default app;
